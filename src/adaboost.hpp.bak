@@ -1,0 +1,61 @@
+#ifndef ADABOOST_ADABOOST_H_
+#define ADABOOST_ADABOOST_H_
+
+#include <stdio.h>
+#include <iostream>
+#include <vector>
+#include <boost/ptr_container/ptr_vector.hpp>
+#include <boost/numeric/ublas/matrix.hpp>
+
+namespace adaboost{
+
+typedef std::vector<float> ClassificationResults;
+typedef boost::numeric::ublas::matrix<int> MatrixResults;
+typedef std::vector<int> Labels;
+
+// A classifier abstract class
+template <typename T> class Classifier {
+ public:
+  typedef typename boost::ptr_vector<Classifier<T> > CollectionClassifiers;
+  typedef typename std::vector<std::vector<T> > Data;
+  virtual int analyze(const std::vector<T> & feature) const = 0;    
+};
+
+template <typename T> class ADA {
+ public:
+    // Apply Adaboost 
+    //
+    //  @param weak_classifiers, a set of weak classifiers
+    //  @param data, the dataset to classify
+    //  @param labels, classification labels (e.g. -1; +1}
+    //  @param num_rounds, # boost iteration (default 100) 
+  ClassificationResults ada_boost(
+      typename Classifier<T>::CollectionClassifiers const &weak_classifiers,
+      typename Classifier<T>::Data const & data,
+      const Labels & labels,
+      const unsigned int num_iterations);
+}; // class ADA
+  
+// A strong classifier is a linear comb of weak class
+template <typename T> class StrongClassifier : public Classifier<T> {
+ private:    
+  ClassificationResults & weigths_;
+  size_t num_classifiers_;
+  typename Classifier<T>::CollectionClassifiers * classifiers_;
+  Labels & labels_;
+    
+ public:
+  StrongClassifier(ClassificationResults & w,
+                   typename Classifier<T>::CollectionClassifiers * cls,
+                   Labels & labels) :
+      weigths_(w), 
+      num_classifiers_(cls->size()),
+      classifiers_(cls),
+      labels_(labels){};
+  int analyze(const std::vector<T> & feature);
+  void performance();
+}; // strong classifier
+
+} // end namespace adaboost
+
+#endif	// ADABOOST_ADABOOST_H_
